@@ -1,61 +1,61 @@
 # GoCommet DevOps Platform - Deployment Guide
 
-## 🚀 Quick Start Deployment
+ 🚀 Quick Start Deployment
 
-### Prerequisites
+# Prerequisites
 - Docker 20.10+ and Docker Compose 2.0+
 - Git
 - 8GB RAM minimum
 - 20GB free disk space
 
-### One-Command Deployment
-```bash
+# One-Command Deployment
+bash
 git clone https://github.com/yourusername/gocomet-devops-platform.git
 cd gocomet-devops-platform
 ./scripts/deploy.sh
-```
 
-### Manual Deployment Steps
 
-#### 1. Clone Repository
-```bash
+# Manual Deployment Steps
+
+ 1. Clone Repository
+bash
 git clone https://github.com/yourusername/gocomet-devops-platform.git
 cd gocomet-devops-platform
-```
 
-#### 2. Start Platform Infrastructure
-```bash
+
+ 2. Start Platform Infrastructure
+bash
 # Start core services (Vault, Monitoring, Databases)
 docker-compose up -d vault prometheus grafana postgres mysql mongodb
 
 # Wait for services to initialize
 sleep 30
-```
 
-#### 3. Deploy Applications
-```bash
+
+ 3. Deploy Applications
+bash
 # Start sample applications
 docker-compose up -d sales-api sales-frontend wordpress reporting-api
 
 # Start supporting services
 docker-compose up -d nginx backup-service
-```
 
-#### 4. Verify Deployment
-```bash
+
+ 4. Verify Deployment
+bash
 # Check service status
 ./scripts/status.sh
 
 # View logs if needed
 docker-compose logs -f
-```
 
-## 🔧 Configuration
 
-### Environment Variables
+ 🔧 Configuration
+
+# Environment Variables
 Create a `.env` file in the root directory:
 
-```bash
+bash
 # Database Configuration
 POSTGRES_DB=sales_db
 POSTGRES_USER=sales_user
@@ -79,54 +79,54 @@ VAULT_DEV_ROOT_TOKEN_ID=gocomet-dev-token
 
 # Monitoring Configuration
 GRAFANA_ADMIN_PASSWORD=gocomet-admin
-```
 
-### Network Configuration
+
+# Network Configuration
 The platform uses a custom Docker network `gocomet-platform` for service isolation and communication.
 
-### Port Mapping
-- **3000**: Sales Dashboard Frontend
-- **3001**: Sales API & Grafana
-- **5000**: Reporting API
-- **8080**: WordPress
-- **8200**: Vault UI
-- **9090**: Prometheus
+# Port Mapping
+- 3000: Sales Dashboard Frontend
+- 3001: Sales API & Grafana
+- 5000: Reporting API
+- 8080: WordPress
+- 8200: Vault UI
+- 9090: Prometheus
 
-## 📊 Application Deployment
+ 📊 Application Deployment
 
-### Sales Dashboard
-```bash
+# Sales Dashboard
+bash
 # Build and deploy
 docker-compose up -d sales-api sales-frontend postgres
 
 # Check health
 curl http://localhost:3001/health
 curl http://localhost:3000
-```
 
-### Internal Wiki (WordPress)
-```bash
+
+# Internal Wiki (WordPress)
+bash
 # Deploy WordPress
 docker-compose up -d wordpress mysql
 
 # Access WordPress setup
 open http://localhost:8080
-```
 
-### Reporting API
-```bash
+
+# Reporting API
+bash
 # Deploy Flask API
 docker-compose up -d reporting-api mongodb
 
 # Test API
 curl http://localhost:5000/health
 curl http://localhost:5000/api/reports
-```
 
-## 🔐 Security Configuration
 
-### Vault Setup
-```bash
+ 🔐 Security Configuration
+
+# Vault Setup
+bash
 # Initialize Vault (first time only)
 docker-compose exec vault vault operator init
 
@@ -135,51 +135,51 @@ docker-compose exec vault vault operator unseal
 
 # Login to Vault
 docker-compose exec vault vault auth -method=userpass username=admin password=admin
-```
 
-### SSL/TLS Configuration
+
+# SSL/TLS Configuration
 1. Place SSL certificates in `platform/nginx/ssl/`
 2. Update `platform/nginx/nginx.conf` with certificate paths
 3. Restart nginx: `docker-compose restart nginx`
 
-## 📈 Monitoring Setup
+ 📈 Monitoring Setup
 
-### Prometheus Configuration
+# Prometheus Configuration
 - Configuration: `platform/monitoring/prometheus.yml`
 - Access: http://localhost:9090
 - Targets: All services automatically discovered
 
-### Grafana Setup
+# Grafana Setup
 1. Access: http://localhost:3001
 2. Login: admin / gocomet-admin
 3. Import dashboards from `platform/monitoring/grafana/dashboards/`
 
-### Custom Dashboards
+# Custom Dashboards
 Create custom dashboards in `platform/monitoring/grafana/dashboards/`:
 - Application Performance
 - Database Metrics
 - Infrastructure Health
 - Security Alerts
 
-## 🔄 Backup Configuration
+ 🔄 Backup Configuration
 
-### Automated Backups
+# Automated Backups
 Backups run daily at 2 AM via cron job:
-```bash
+bash
 # Manual backup
 docker-compose exec backup-service /scripts/backup-all.sh
 
 # Check backup status
 docker-compose logs backup-service
-```
 
-### Backup Locations
+
+# Backup Locations
 - PostgreSQL: `platform/backup/postgres/`
 - MySQL: `platform/backup/mysql/`
 - MongoDB: `platform/backup/mongodb/`
 
-### Restore Process
-```bash
+# Restore Process
+bash
 # PostgreSQL restore
 docker-compose exec postgres psql -U sales_user -d sales_db < backup_file.sql
 
@@ -188,23 +188,23 @@ docker-compose exec mysql mysql -u wordpress_user -p wordpress_db < backup_file.
 
 # MongoDB restore
 docker-compose exec mongodb mongorestore --db reports_db backup_directory/
-```
 
-## 🚀 Scaling
 
-### Horizontal Scaling
-```bash
+ 🚀 Scaling
+
+# Horizontal Scaling
+bash
 # Scale applications
 docker-compose up -d --scale sales-api=3
 docker-compose up -d --scale reporting-api=2
 
 # Update nginx configuration for load balancing
 docker-compose restart nginx
-```
 
-### Vertical Scaling
+
+# Vertical Scaling
 Update resource limits in `docker-compose.yml`:
-```yaml
+yaml
 services:
   sales-api:
     deploy:
@@ -215,21 +215,21 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
-```
 
-## 🔧 Maintenance
 
-### Log Management
-```bash
+ 🔧 Maintenance
+
+# Log Management
+bash
 # View logs
 docker-compose logs -f [service-name]
 
 # Rotate logs
 docker-compose exec [service] logrotate /etc/logrotate.conf
-```
 
-### Database Maintenance
-```bash
+
+# Database Maintenance
+bash
 # PostgreSQL maintenance
 docker-compose exec postgres psql -U sales_user -d sales_db -c "VACUUM ANALYZE;"
 
@@ -238,10 +238,10 @@ docker-compose exec mysql mysql -u wordpress_user -p -e "OPTIMIZE TABLE wp_posts
 
 # MongoDB maintenance
 docker-compose exec mongodb mongosh --eval "db.runCommand({compact: 'reports'})"
-```
 
-### Security Updates
-```bash
+
+# Security Updates
+bash
 # Update base images
 docker-compose pull
 docker-compose up -d
@@ -249,14 +249,14 @@ docker-compose up -d
 # Scan for vulnerabilities
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
   aquasec/trivy image [image-name]
-```
 
-## 🚨 Troubleshooting
 
-### Common Issues
+ 🚨 Troubleshooting
 
-#### Services Not Starting
-```bash
+# Common Issues
+
+ Services Not Starting
+bash
 # Check Docker status
 docker info
 
@@ -265,27 +265,27 @@ docker-compose logs [service-name]
 
 # Restart specific service
 docker-compose restart [service-name]
-```
 
-#### Database Connection Issues
-```bash
+
+ Database Connection Issues
+bash
 # Check database connectivity
 docker-compose exec postgres pg_isready -U sales_user
 docker-compose exec mysql mysqladmin ping -h localhost
 docker-compose exec mongodb mongosh --eval "db.adminCommand('ping')"
-```
 
-#### Port Conflicts
-```bash
+
+ Port Conflicts
+bash
 # Check port usage
 netstat -tulpn | grep :3000
 
 # Change ports in docker-compose.yml
 # Update nginx configuration accordingly
-```
 
-### Health Checks
-```bash
+
+# Health Checks
+bash
 # Platform health
 ./scripts/status.sh
 
@@ -293,10 +293,10 @@ netstat -tulpn | grep :3000
 curl http://localhost:3001/health  # Sales API
 curl http://localhost:5000/health    # Reporting API
 curl http://localhost:8080          # WordPress
-```
 
-### Performance Issues
-```bash
+
+# Performance Issues
+bash
 # Check resource usage
 docker stats
 
@@ -305,32 +305,32 @@ docker-compose logs -f | grep ERROR
 
 # Check database performance
 docker-compose exec postgres psql -U sales_user -d sales_db -c "SELECT * FROM pg_stat_activity;"
-```
 
-## 📋 Production Considerations
 
-### Security Hardening
+ 📋 Production Considerations
+
+# Security Hardening
 1. Change default passwords
 2. Enable SSL/TLS
 3. Configure firewall rules
 4. Regular security updates
 5. Implement secret rotation
 
-### High Availability
+# High Availability
 1. Use external load balancer
 2. Implement database replication
 3. Set up monitoring alerts
 4. Create disaster recovery plan
 
-### Performance Optimization
+# Performance Optimization
 1. Enable database query caching
 2. Implement CDN for static assets
 3. Configure connection pooling
 4. Monitor and optimize queries
 
-## �� Useful Commands
+ �� Useful Commands
 
-```bash
+bash
 # Platform management
 ./scripts/deploy.sh          # Deploy platform
 ./scripts/status.sh          # Check status
@@ -350,4 +350,4 @@ docker-compose exec mongodb mongosh
 # Backup management
 docker-compose exec backup-service /scripts/backup-all.sh
 ls -la platform/backup/*/
-```
+

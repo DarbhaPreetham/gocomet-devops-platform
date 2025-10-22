@@ -64,6 +64,32 @@ jobs:
         sudo chmod +x /usr/local/bin/docker-compose
         docker-compose version
     
+    - name: Clean up existing containers and free ports
+      run: |
+        echo "🧹 Cleaning up existing containers and freeing ports..."
+        
+        # Stop and remove any existing containers
+        docker compose down -v --remove-orphans || true
+        
+        # Clean up any dangling containers
+        docker container prune -f || true
+        
+        # Free up ports that might be in use
+        echo "Freeing up ports 3000, 3001, 5000, 8080, 8200, 9090..."
+        
+        # Kill any processes using our required ports
+        for port in 3000 3001 5000 8080 8200 9090; do
+          if lsof -i:$port >/dev/null 2>&1; then
+            echo "Port $port is in use, freeing it..."
+            lsof -ti:$port | xargs kill -9 2>/dev/null || true
+          fi
+        done
+        
+        # Wait a moment for ports to be fully released
+        sleep 5
+        
+        echo "✅ Cleanup completed"
+    
     - name: Deploy to staging
       run: |
         echo "🚀 Deploying GoCommet DevOps Platform to staging..."
@@ -90,6 +116,20 @@ jobs:
         echo "   • Vault UI: http://localhost:8200"
         echo "   • Grafana: http://localhost:3001"
         echo "   • Prometheus: http://localhost:9090"
+    
+    - name: Cleanup after deployment
+      if: always()
+      run: |
+        echo "🧹 Cleaning up after deployment..."
+        
+        # Stop all containers
+        docker compose down -v --remove-orphans || true
+        
+        # Clean up any dangling containers and images
+        docker container prune -f || true
+        docker image prune -f || true
+        
+        echo "✅ Cleanup completed"
 
   security-scan:
     runs-on: ubuntu-latest

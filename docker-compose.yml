@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Platform Infrastructure
   vault:
-    image: vault:1.15.0
+    image: vault:latest
     container_name: gocomet-vault
     ports:
       - "8200:8200"
@@ -54,7 +54,7 @@ services:
   # Sample Applications
   # 1. Sales Dashboard (React + Node.js + PostgreSQL)
   postgres:
-    image: postgres:15
+    image: postgres:latest
     container_name: gocomet-postgres
     environment:
       POSTGRES_DB: sales_db
@@ -126,7 +126,7 @@ services:
 
   # 3. Reporting API (Flask + MongoDB)
   mongodb:
-    image: mongo:7.0
+    image: mongo:latest
     container_name: gocomet-mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin

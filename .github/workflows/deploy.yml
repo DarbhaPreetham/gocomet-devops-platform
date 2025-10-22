@@ -69,7 +69,7 @@ jobs:
         echo "🚀 Deploying GoCommet DevOps Platform to staging..."
         
         # Start the platform
-        docker-compose up -d
+        docker compose up -d
         
         # Wait for services to be ready
         sleep 60
@@ -78,7 +78,7 @@ jobs:
         ./scripts/status.sh
         
         # Run backup test
-        docker-compose exec backup-service /scripts/backup-all.sh
+        docker compose exec backup-service /scripts/backup-all.sh
     
     - name: Notify deployment
       run: |

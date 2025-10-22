@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Platform Infrastructure
   vault:
-    image: vault:1.15.2
+    image: vault:1.15.1
     container_name: gocomet-vault
     ports:
       - "8200:8200"
@@ -126,7 +126,7 @@ services:
 
   # 3. Reporting API (Flask + MongoDB)
   mongodb:
-    image: mongo:7
+    image: mongo:7.0
     container_name: gocomet-mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin

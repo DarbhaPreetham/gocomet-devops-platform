@@ -17,6 +17,9 @@ RUN mkdir -p /backup/postgres /backup/mysql /backup/mongodb
 COPY scripts/ /scripts/
 RUN chmod +x /scripts/*.sh
 
+# Ensure backup script is executable and has proper shebang
+RUN chmod +x /scripts/backup-all.sh
+
 # Set up cron job
 RUN echo "0 2 * * * /scripts/backup-all.sh" | crontab -
 

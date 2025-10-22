@@ -3,8 +3,13 @@ name: GoCommet DevOps Platform CI/CD
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
+  pull_request_target:
     branches: [ main ]
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
 
 jobs:
   test:
@@ -86,6 +91,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: javascript, python
+    
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+    
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+    
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
@@ -95,7 +111,7 @@ jobs:
         output: 'trivy-results.sarif'
     
     - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'

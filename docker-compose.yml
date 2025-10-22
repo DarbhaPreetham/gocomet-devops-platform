@@ -1,0 +1,197 @@
+version: '3.8'
+
+services:
+  # Platform Infrastructure
+  vault:
+    image: vault:1.15.2
+    container_name: gocomet-vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "gocomet-dev-token"
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    volumes:
+      - vault-data:/vault/data
+      - ./platform/vault/config:/vault/config
+    networks:
+      - gocomet-platform
+    cap_add:
+      - IPC_LOCK
+
+  # Monitoring Stack
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: gocomet-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./platform/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - gocomet-platform
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: gocomet-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "gocomet-admin"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./platform/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./platform/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - gocomet-platform
+
+  # Sample Applications
+  # 1. Sales Dashboard (React + Node.js + PostgreSQL)
+  postgres:
+    image: postgres:15
+    container_name: gocomet-postgres
+    environment:
+      POSTGRES_DB: sales_db
+      POSTGRES_USER: sales_user
+      POSTGRES_PASSWORD: sales_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./platform/backup/postgres:/backup
+    networks:
+      - gocomet-platform
+
+  sales-api:
+    build: ./apps/sales-dashboard/api
+    container_name: gocomet-sales-api
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_URL: postgresql://sales_user:sales_password@postgres:5432/sales_db
+      NODE_ENV: production
+    depends_on:
+      - postgres
+      - vault
+    networks:
+      - gocomet-platform
+
+  sales-frontend:
+    build: ./apps/sales-dashboard/frontend
+    container_name: gocomet-sales-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:3001
+    depends_on:
+      - sales-api
+    networks:
+      - gocomet-platform
+
+  # 2. Internal Wiki (WordPress + MySQL)
+  mysql:
+    image: mysql:8.0
+    container_name: gocomet-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: wordpress_db
+      MYSQL_USER: wordpress_user
+      MYSQL_PASSWORD: wordpress_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./platform/backup/mysql:/backup
+    networks:
+      - gocomet-platform
+
+  wordpress:
+    image: wordpress:latest
+    container_name: gocomet-wordpress
+    ports:
+      - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql:3306
+      WORDPRESS_DB_NAME: wordpress_db
+      WORDPRESS_DB_USER: wordpress_user
+      WORDPRESS_DB_PASSWORD: wordpress_password
+    depends_on:
+      - mysql
+    volumes:
+      - wordpress-data:/var/www/html
+    networks:
+      - gocomet-platform
+
+  # 3. Reporting API (Flask + MongoDB)
+  mongodb:
+    image: mongo:7
+    container_name: gocomet-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin_password
+      MONGO_INITDB_DATABASE: reports_db
+    volumes:
+      - mongodb-data:/data/db
+      - ./platform/backup/mongodb:/backup
+    networks:
+      - gocomet-platform
+
+  reporting-api:
+    build: ./apps/reporting-api
+    container_name: gocomet-reporting-api
+    ports:
+      - "5000:5000"
+    environment:
+      MONGODB_URI: mongodb://admin:admin_password@mongodb:27017/reports_db
+      FLASK_ENV: production
+    depends_on:
+      - mongodb
+      - vault
+    networks:
+      - gocomet-platform
+
+  # Backup Service
+  backup-service:
+    build: ./platform/backup
+    container_name: gocomet-backup
+    volumes:
+      - postgres-data:/backup/postgres
+      - mysql-data:/backup/mysql
+      - mongodb-data:/backup/mongodb
+      - ./platform/backup/scripts:/scripts
+    environment:
+      BACKUP_SCHEDULE: "0 2 * * *"  # Daily at 2 AM
+    networks:
+      - gocomet-platform
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: gocomet-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./platform/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./platform/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - sales-frontend
+      - wordpress
+      - reporting-api
+    networks:
+      - gocomet-platform
+
+volumes:
+  vault-data:
+  prometheus-data:
+  grafana-data:
+  postgres-data:
+  mysql-data:
+  mongodb-data:
+  wordpress-data:
+
+networks:
+  gocomet-platform:
+    driver: bridge

@@ -1,0 +1,101 @@
+name: GoCommet DevOps Platform CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build and test applications
+      run: |
+        # Build Sales Dashboard API
+        cd apps/sales-dashboard/api
+        docker build -t sales-api:test .
+        
+        # Build Sales Dashboard Frontend
+        cd ../frontend
+        docker build -t sales-frontend:test .
+        
+        # Build Reporting API
+        cd ../../reporting-api
+        docker build -t reporting-api:test .
+    
+    - name: Run security scan
+      run: |
+        # Install Trivy for vulnerability scanning
+        sudo apt-get update
+        sudo apt-get install wget apt-transport-https gnupg lsb-release
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update
+        sudo apt-get install trivy
+        
+        # Scan images for vulnerabilities
+        trivy image sales-api:test
+        trivy image sales-frontend:test
+        trivy image reporting-api:test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to staging
+      run: |
+        echo "🚀 Deploying GoCommet DevOps Platform to staging..."
+        
+        # Start the platform
+        docker-compose up -d
+        
+        # Wait for services to be ready
+        sleep 60
+        
+        # Run health checks
+        ./scripts/status.sh
+        
+        # Run backup test
+        docker-compose exec backup-service /scripts/backup-all.sh
+    
+    - name: Notify deployment
+      run: |
+        echo "✅ GoCommet DevOps Platform deployed successfully!"
+        echo "🔗 Access URLs:"
+        echo "   • Sales Dashboard: http://localhost:3000"
+        echo "   • Internal Wiki: http://localhost:8080"
+        echo "   • Reporting API: http://localhost:5000"
+        echo "   • Vault UI: http://localhost:8200"
+        echo "   • Grafana: http://localhost:3001"
+        echo "   • Prometheus: http://localhost:9090"
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'

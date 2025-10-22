@@ -75,10 +75,10 @@ jobs:
         docker container prune -f || true
         
         # Free up ports that might be in use
-        echo "Freeing up ports 3000, 3001, 5000, 8080, 8200, 9090..."
+        echo "Freeing up ports 3000, 3001, 3002, 5000, 8080, 8200, 9090..."
         
         # Kill any processes using our required ports
-        for port in 3000 3001 5000 8080 8200 9090; do
+        for port in 3000 3001 3002 5000 8080 8200 9090; do
           if lsof -i:$port >/dev/null 2>&1; then
             echo "Port $port is in use, freeing it..."
             lsof -ti:$port | xargs kill -9 2>/dev/null || true
@@ -114,7 +114,7 @@ jobs:
         echo "   • Internal Wiki: http://localhost:8080"
         echo "   • Reporting API: http://localhost:5000"
         echo "   • Vault UI: http://localhost:8200"
-        echo "   • Grafana: http://localhost:3001"
+        echo "   • Grafana: http://localhost:3002"
         echo "   • Prometheus: http://localhost:9090"
     
     - name: Cleanup after deployment
